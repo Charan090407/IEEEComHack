@@ -41,12 +41,12 @@ class _BottomNavScreenState extends State<BottomNavScreen> {
 
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
+            icon: Icon(Icons.edit_document),
+            label: "Directive",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: "Updates",
+            icon: Icon(Icons.auto_awesome),
+            label: "AI Directives",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.menu_book),

@@ -64,128 +64,177 @@ class _ProfilePageState extends State<ProfilePage> {
     return CupertinoPageScaffold(
       backgroundColor: const Color(0xFFF2F3F7),
       navigationBar: const CupertinoNavigationBar(
+        border: null,
         middle: Text(
           "Profile",
           style: TextStyle(
             fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: CupertinoColors.black,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
       child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-
-            /// Profile Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: CupertinoColors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: CupertinoColors.systemGrey.withOpacity(0.15),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-
-                    /// Avatar
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: const Color(0xFFDCE3F5),
-                      backgroundImage: photoURL.isNotEmpty
-                          ? NetworkImage(photoURL)
-                          : null,
-                      child: photoURL.isEmpty
-                          ? Text(
-                        name.isNotEmpty
-                            ? name[0].toUpperCase()
-                            : "U",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: CupertinoColors.white,
-                        ),
-                      )
-                          : null,
-                    ),
-
-                    const SizedBox(width: 15),
-
-                    /// Name & Email from Database
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: CupertinoColors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            email,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: CupertinoColors.systemGrey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+        child: TweenAnimationBuilder(
+          duration: const Duration(milliseconds: 800),
+          tween: Tween<double>(begin: 0, end: 1),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 40 * (1 - value)),
+                child: child,
               ),
-            ),
+            );
+          },
+          child: Column(
+            children: [
+              const SizedBox(height: 30),
 
-            const Spacer(),
-
-            /// Logout Button
-            Padding(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: GestureDetector(
-                onTap: () => _logout(context),
+              /// 🔥 Profile Card
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
-                  width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: CupertinoColors.white,
-                    borderRadius: BorderRadius.circular(18),
+                    gradient: const LinearGradient(
+                      colors: [
+                        Color(0xFFFFFFFF),
+                        Color(0xFFF8F9FD),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(25),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                        CupertinoColors.systemGrey.withOpacity(0.12),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
+                        color: CupertinoColors.systemGrey.withOpacity(0.15),
+                        blurRadius: 25,
+                        offset: const Offset(0, 15),
                       ),
                     ],
                   ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    "Log Out",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFD9534F),
+                  child: Row(
+                    children: [
+
+                      /// ✨ Animated Avatar
+                      TweenAnimationBuilder(
+                        duration: const Duration(milliseconds: 800),
+                        tween: Tween<double>(begin: 0.8, end: 1),
+                        curve: Curves.elasticOut,
+                        builder: (context, scale, child) {
+                          return Transform.scale(
+                            scale: scale,
+                            child: child,
+                          );
+                        },
+                        child: CircleAvatar(
+                          radius: 35,
+                          backgroundColor: const Color(0xFF6C8EF5),
+                          backgroundImage: photoURL.isNotEmpty
+                              ? NetworkImage(photoURL)
+                              : null,
+                          child: photoURL.isEmpty
+                              ? Text(
+                            name.isNotEmpty
+                                ? name[0].toUpperCase()
+                                : "U",
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: CupertinoColors.white,
+                            ),
+                          )
+                              : null,
+                        ),
+                      ),
+
+                      const SizedBox(width: 18),
+
+                      /// 👤 Name & Email
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              email,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: CupertinoColors.systemGrey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              /// 🚪 Animated Logout Button
+              Padding(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+                child: GestureDetector(
+                  onTap: () => _logout(context),
+                  child: TweenAnimationBuilder(
+                    duration: const Duration(milliseconds: 200),
+                    tween: Tween<double>(begin: 1, end: 1),
+                    builder: (context, scale, child) {
+                      return AnimatedScale(
+                        scale: scale,
+                        duration: const Duration(milliseconds: 150),
+                        child: child,
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding:
+                      const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFFF6B6B),
+                            Color(0xFFD9534F),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD9534F)
+                                .withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        "Log Out",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: CupertinoColors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
