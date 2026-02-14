@@ -39,6 +39,13 @@ dependencies:
   cloud_firestore: ^4.17.5
   google_sign_in: ^6.2.1
   firebase_database: ^10.4.5
+  syncfusion_flutter_pdf: ^24.1.41
+  firebase_storage: ^11.6.0
+  file_selector: ^0.9.5
+
+
+
+
 
 dev_dependencies:
   flutter_test:
