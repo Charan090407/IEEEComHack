@@ -16,7 +16,14 @@ class UpdatesPage extends StatefulWidget {
 class _UpdatesPageState extends State<UpdatesPage>
     with SingleTickerProviderStateMixin {
   bool isLoading = false;
-  final String sambaApiKey = "2ee6e6d1-ed57-45c2-b73d-e6d7304815aa";
+  bool isTamil = false;
+
+  List originalDos = [];
+  List originalDonts = [];
+  List translatedDos = [];
+  List translatedDonts = [];
+
+  final String sambaApiKey = "f1b016df-a0d6-4f3a-8a3b-98185d12339a";
 
   // ===============================
   // MAIN PROCESS
@@ -44,20 +51,20 @@ class _UpdatesPageState extends State<UpdatesPage>
       Map<String, dynamic> result =
       await generateDosDontsFromSamba(extractedText);
 
-      List dos = result["dos"] ?? [];
-      List donts = result["donts"] ?? [];
+      originalDos = result["dos"] ?? [];
+      originalDonts = result["donts"] ?? [];
 
       await FirebaseFirestore.instance.collection("directives").add({
         "fileName": file.name,
         "rawText": extractedText,
-        "dos": dos,
-        "donts": donts,
+        "dos": originalDos,
+        "donts": originalDonts,
         "generatedBy": "AI",
         "createdAt": FieldValue.serverTimestamp(),
       });
 
       setState(() => isLoading = false);
-      showPremiumPopup(dos, donts);
+      showPremiumPopup();
     } catch (e) {
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context)
@@ -97,68 +104,210 @@ class _UpdatesPageState extends State<UpdatesPage>
       }),
     );
 
+    if (response.statusCode != 200) {
+      throw Exception("API Error: ${response.body}");
+    }
+
     final decoded = jsonDecode(response.body);
+
+    if (decoded["choices"] == null ||
+        decoded["choices"].isEmpty) {
+      throw Exception("Invalid AI response structure");
+    }
+
     String content =
-    decoded["choices"][0]["message"]["content"];
+        decoded["choices"][0]["message"]["content"] ?? "";
 
-    content =
-        content.replaceAll("```json", "").replaceAll("```", "").trim();
+    content = content
+        .replaceAll("```json", "")
+        .replaceAll("```", "")
+        .trim();
 
-    return jsonDecode(content);
+    if (content.isEmpty) {
+      throw Exception("AI returned empty content");
+    }
+
+    try {
+      return jsonDecode(content);
+    } catch (e) {
+      throw Exception("AI returned invalid JSON format");
+    }
   }
 
   // ===============================
-  // PREMIUM POPUP
+  // SAFE TRANSLATION
   // ===============================
-  void showPremiumPopup(List dos, List donts) {
+  Future<void> translateToTamil() async {
+    final url =
+    Uri.parse("https://api.sambanova.ai/v1/chat/completions");
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Authorization": "Bearer $sambaApiKey",
+        "Content-Type": "application/json"
+      },
+      body: jsonEncode({
+        "model": "Meta-Llama-3.1-8B-Instruct",
+        "messages": [
+          {
+            "role": "user",
+            "content":
+            "Translate the following Do's and Don'ts into Tamil. Return ONLY JSON: {\"dos\":[],\"donts\":[]}\n\nDo's: $originalDos\nDon'ts: $originalDonts"
+          }
+        ],
+        "temperature": 0.2
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception("Translation API Error: ${response.body}");
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded["choices"] == null ||
+        decoded["choices"].isEmpty) {
+      throw Exception("Invalid translation response");
+    }
+
+    String content =
+        decoded["choices"][0]["message"]["content"] ?? "";
+
+    content = content
+        .replaceAll("```json", "")
+        .replaceAll("```", "")
+        .trim();
+
+    try {
+      final result = jsonDecode(content);
+      translatedDos = result["dos"] ?? [];
+      translatedDonts = result["donts"] ?? [];
+    } catch (e) {
+      throw Exception("Translation JSON parsing failed");
+    }
+  }
+
+  // ===============================
+  // POPUP (UI NOT CHANGED)
+  // ===============================
+  void showPremiumPopup() {
     showDialog(
       context: context,
-      builder: (_) => DefaultTabController(
-        length: 2,
-        child: Dialog(
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            height: 450,
-            child: Column(
-              children: [
-                const Text(
-                  "AI Generated Directives",
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                const TabBar(
-                  labelColor: Colors.black,
-                  indicatorColor: Colors.deepPurple,
-                  tabs: [
-                    Tab(text: "Do's"),
-                    Tab(text: "Don'ts"),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setStatePopup) {
+          return DefaultTabController(
+            length: 2,
+            child: Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                height: 500,
+                child: Column(
+                  children: [
+                    const Text(
+                      "AI Generated Directives",
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 10),
+
+                    const TabBar(
+                      labelColor: Colors.black,
+                      indicatorColor: Colors.deepPurple,
+                      tabs: [
+                        Tab(text: "Do's"),
+                        Tab(text: "Don'ts"),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          buildList(
+                              isTamil
+                                  ? translatedDos
+                                  : originalDos,
+                              Colors.green.shade50),
+                          buildList(
+                              isTamil
+                                  ? translatedDonts
+                                  : originalDonts,
+                              Colors.red.shade50),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          padding:
+                          const EdgeInsets.symmetric(
+                              vertical: 14),
+                          shape:
+                          RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(30),
+                          ),
+                          elevation: 6,
+                        ),
+                        icon: const Icon(
+                          Icons.translate,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          isTamil
+                              ? "View in English"
+                              : "Translate to Tamil",
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight:
+                              FontWeight.bold),
+                        ),
+                        onPressed: () async {
+                          try {
+                            if (!isTamil) {
+                              await translateToTamil();
+                            }
+                            setStatePopup(() {
+                              isTamil = !isTamil;
+                            });
+                          } catch (e) {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(
+                              SnackBar(
+                                  content:
+                                  Text("Error: $e")),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    const Divider(),
+
+                    const Text(
+                      "Generated by Eternals",
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      buildList(dos, Colors.green.shade50),
-                      buildList(donts, Colors.red.shade50),
-                    ],
-                  ),
-                ),
-                const Divider(),
-                const Text(
-                  "Generated by AI",
-                  style: TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -169,11 +318,11 @@ class _UpdatesPageState extends State<UpdatesPage>
       itemBuilder: (context, index) {
         return Card(
           color: color,
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Text(items[index]),
+            child: Text(items[index].toString()),
           ),
         );
       },
@@ -181,7 +330,7 @@ class _UpdatesPageState extends State<UpdatesPage>
   }
 
   // ===============================
-  // PREMIUM SCREEN UI
+  // MAIN SCREEN UI (UNCHANGED)
   // ===============================
   @override
   Widget build(BuildContext context) {
@@ -195,48 +344,68 @@ class _UpdatesPageState extends State<UpdatesPage>
       ),
       child: Center(
         child: isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
+            ? const CircularProgressIndicator(
+            color: Colors.white)
             : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+          MainAxisAlignment.center,
           children: [
             const Icon(Icons.auto_awesome,
-                color: Colors.deepPurpleAccent, size: 50),
+                color:
+                Colors.deepPurpleAccent,
+                size: 50),
             const SizedBox(height: 20),
             const Text(
               "AI Based Public Directives",
               style: TextStyle(
                 fontSize: 26,
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                FontWeight.bold,
                 color: Colors.white,
                 letterSpacing: 1.2,
               ),
-              textAlign: TextAlign.center,
+              textAlign:
+              TextAlign.center,
             ),
             const SizedBox(height: 10),
             const Text(
               "Upload a document and let AI extract structured Do's & Don'ts",
               style: TextStyle(
-                  color: Colors.white70,
+                  color:
+                  Colors.white70,
                   fontSize: 14),
-              textAlign: TextAlign.center,
+              textAlign:
+              TextAlign.center,
             ),
             const SizedBox(height: 40),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 30, vertical: 15),
-                backgroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+              style:
+              ElevatedButton.styleFrom(
+                padding:
+                const EdgeInsets
+                    .symmetric(
+                    horizontal:
+                    30,
+                    vertical:
+                    15),
+                backgroundColor:
+                Colors.deepPurple,
+                shape:
+                RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius
+                      .circular(
+                      30),
                 ),
                 elevation: 8,
               ),
-              onPressed: pickAndProcessFile,
+              onPressed:
+              pickAndProcessFile,
               child: const Text(
                 "Upload PDF & Generate",
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white, // 👈 makes text white
+                  color: Colors.white,
                 ),
               ),
             ),

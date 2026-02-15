@@ -479,7 +479,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             const SizedBox(height: 20),
             const Text(
-              "Upload Public Directive",
+              "NLP Based Public Directive",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
